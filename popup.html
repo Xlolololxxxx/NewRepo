@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 400px;
+      min-height: 500px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      margin: 0;
+      padding: 16px;
+      background: #f8f9fa;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #e9ecef;
+    }
+
+    .header h1 {
+      margin: 0 0 8px 0;
+      font-size: 18px;
+      color: #212529;
+      font-weight: 600;
+    }
+
+    .header .subtitle {
+      color: #6c757d;
+      font-size: 12px;
+    }
+
+    .section {
+      margin-bottom: 20px;
+      background: white;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .section h3 {
+      margin: 0 0 12px 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: #495057;
+    }
+
+    .btn {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      width: 100%;
+      margin-bottom: 8px;
+      transition: background-color 0.2s;
+    }
+
+    .btn:hover {
+      background: #0056b3;
+    }
+
+    .btn.secondary {
+      background: #6c757d;
+    }
+
+    .btn.secondary:hover {
+      background: #545b62;
+    }
+
+    .btn.success {
+      background: #28a745;
+    }
+
+    .btn.success:hover {
+      background: #1e7e34;
+    }
+
+    .btn:disabled {
+      background: #cccccc;
+      cursor: not-allowed;
+    }
+
+    .status {
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .status.info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .results {
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      padding: 8px;
+      background: #f8f9fa;
+      font-size: 12px;
+    }
+
+    .results.empty {
+      text-align: center;
+      color: #6c757d;
+      font-style: italic;
+    }
+
+    .element-item {
+      background: white;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      padding: 8px;
+      margin-bottom: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .element-item:hover {
+      background: #e9ecef;
+    }
+
+    .element-tag {
+      font-weight: 600;
+      color: #007bff;
+      font-size: 11px;
+    }
+
+    .element-text {
+      color: #495057;
+      font-size: 11px;
+      margin-top: 2px;
+      max-width: 100%;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .element-position {
+      color: #6c757d;
+      font-size: 10px;
+      margin-top: 2px;
+    }
+
+    .settings {
+      border-top: 1px solid #dee2e6;
+      padding-top: 12px;
+    }
+
+    .checkbox-group {
+      margin-bottom: 12px;
+    }
+
+    .checkbox-group label {
+      display: flex;
+      align-items: center;
+      font-size: 12px;
+      color: #495057;
+      cursor: pointer;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      margin-right: 8px;
+    }
+
+    .select-group {
+      margin-bottom: 12px;
+    }
+
+    .select-group label {
+      display: block;
+      font-size: 12px;
+      color: #495057;
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+
+    .select-group select {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #dee2e6;
+      margin-bottom: 16px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 8px 12px;
+      text-align: center;
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-size: 12px;
+      color: #6c757d;
+      transition: color 0.2s, border-color 0.2s;
+      border-bottom: 2px solid transparent;
+    }
+
+    .tab.active {
+      color: #007bff;
+      border-bottom-color: #007bff;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #6c757d;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .stat-item {
+      background: #f8f9fa;
+      padding: 8px;
+      border-radius: 4px;
+      text-align: center;
+      border: 1px solid #e9ecef;
+    }
+
+    .stat-number {
+      font-size: 18px;
+      font-weight: 600;
+      color: #007bff;
+      display: block;
+    }
+
+    .stat-label {
+      font-size: 10px;
+      color: #6c757d;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>DOM Scanner Bot</h1>
+    <div class="subtitle">Web page analysis and automation assistant</div>
+  </div>
+
+  <div id="status" class="status info" style="display: none;"></div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="scan">Scan</button>
+    <button class="tab" data-tab="results">Results</button>
+    <button class="tab" data-tab="settings">Settings</button>
+  </div>
+
+  <!-- Scan Tab -->
+  <div class="tab-content active" id="scan-tab">
+    <div class="section">
+      <h3>Quick Actions</h3>
+      <button id="scan-btn" class="btn">🔍 Scan Current Page</button>
+      <button id="highlight-btn" class="btn secondary">✨ Highlight Elements</button>
+      <button id="clear-highlights-btn" class="btn secondary">🚫 Clear Highlights</button>
+    </div>
+
+    <div class="section">
+      <h3>Page Information</h3>
+      <div id="page-info" class="loading">Loading page info...</div>
+    </div>
+  </div>
+
+  <!-- Results Tab -->
+  <div class="tab-content" id="results-tab">
+    <div class="section">
+      <h3>Scan Statistics</h3>
+      <div id="scan-stats" class="stats">
+        <div class="stat-item">
+          <span class="stat-number" id="elements-count">0</span>
+          <div class="stat-label">Elements</div>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number" id="forms-count">0</span>
+          <div class="stat-label">Forms</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Interactive Elements</h3>
+      <div id="elements-list" class="results empty">
+        No scan results yet. Click "Scan Current Page" to analyze the page.
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Export Options</h3>
+      <button id="export-json-btn" class="btn secondary">📄 Export as JSON</button>
+      <button id="export-csv-btn" class="btn secondary">📊 Export as CSV</button>
+    </div>
+  </div>
+
+  <!-- Settings Tab -->
+  <div class="tab-content" id="settings-tab">
+    <div class="section">
+      <h3>Scan Options</h3>
+      
+      <div class="select-group">
+        <label for="scan-depth">DOM Scan Depth:</label>
+        <select id="scan-depth">
+          <option value="2">Shallow (2 levels)</option>
+          <option value="3" selected>Medium (3 levels)</option>
+          <option value="5">Deep (5 levels)</option>
+          <option value="10">Very Deep (10 levels)</option>
+        </select>
+      </div>
+
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" id="auto-scan"> 
+          Auto-scan new pages
+        </label>
+      </div>
+
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" id="highlight-elements" checked> 
+          Auto-highlight found elements
+        </label>
+      </div>
+
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" id="include-hidden"> 
+          Include hidden elements
+        </label>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Element Selectors</h3>
+      <div class="checkbox-group">
+        <label><input type="checkbox" id="sel-buttons" checked> Buttons</label>
+      </div>
+      <div class="checkbox-group">
+        <label><input type="checkbox" id="sel-inputs" checked> Input Fields</label>
+      </div>
+      <div class="checkbox-group">
+        <label><input type="checkbox" id="sel-links" checked> Links</label>
+      </div>
+      <div class="checkbox-group">
+        <label><input type="checkbox" id="sel-clickable" checked> Clickable Elements</label>
+      </div>
+      <div class="checkbox-group">
+        <label><input type="checkbox" id="sel-forms" checked> Form Elements</label>
+      </div>
+    </div>
+
+    <div class="section settings">
+      <button id="save-settings-btn" class="btn success">💾 Save Settings</button>
+      <button id="reset-settings-btn" class="btn secondary">🔄 Reset to Defaults</button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
