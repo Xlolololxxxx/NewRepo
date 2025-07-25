@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "AI Agent",
+  "version": "1.0",
+  "description": "An AI agent that can access your browser data.",
+  "permissions": [
+    "bookmarks",
+    "history",
+    "storage",
+    "tabs",
+    "activeTab",
+    "scripting",
+    "identity"
+  ],
+  "oauth2": {
+    "client_id": "YOUR_CLIENT_ID.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/gmail.readonly"
+    ]
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "images/icon16.png",
+      "48": "images/icon48.png",
+      "128": "images/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "images/icon16.png",
+    "48": "images/icon48.png",
+    "128": "images/icon128.png"
+  }
+}

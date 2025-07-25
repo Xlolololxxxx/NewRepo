@@ -1,0 +1,47 @@
+body {
+  width: 300px;
+  font-family: sans-serif;
+}
+
+#chat-container {
+  display: flex;
+  flex-direction: column;
+  height: 400px;
+}
+
+#chat-log {
+  flex-grow: 1;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  padding: 10px;
+}
+
+#user-input {
+  border: 1px solid #ccc;
+  padding: 5px;
+}
+
+#send-button {
+  border: none;
+  background-color: #007bff;
+  color: white;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.message {
+  margin-bottom: 5px;
+  padding: 5px;
+  border-radius: 5px;
+}
+
+.user {
+  background-color: #e0e0e0;
+  align-self: flex-end;
+}
+
+.agent {
+  background-color: #007bff;
+  color: white;
+  align-self: flex-start;
+}
