@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DOM Scanner Test Page</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        button { margin: 10px; padding: 10px 20px; }
+        input { margin: 10px; padding: 8px; }
+        .form-group { margin: 15px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>DOM Scanner Bot Test Page</h1>
+        <p>This page is used to test the DOM scanner functionality.</p>
+        
+        <div class="form-group">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" placeholder="Enter your name">
+        </div>
+        
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" placeholder="Enter your email">
+        </div>
+        
+        <div class="form-group">
+            <button id="submit-btn" class="btn primary">Submit Form</button>
+            <button id="cancel-btn" class="btn secondary">Cancel</button>
+        </div>
+        
+        <div class="form-group">
+            <a href="#test" id="test-link">Test Link</a>
+        </div>
+        
+        <form id="test-form">
+            <input type="hidden" name="test" value="hidden">
+            <select name="options">
+                <option value="1">Option 1</option>
+                <option value="2">Option 2</option>
+            </select>
+            <textarea name="comments" placeholder="Comments"></textarea>
+            <input type="submit" value="Submit">
+        </form>
+    </div>
+    
+    <script>
+        // Test script to verify extension functionality
+        console.log('Test page loaded');
+        
+        // Add some click handlers for testing
+        document.getElementById('submit-btn').addEventListener('click', function() {
+            console.log('Submit button clicked');
+            alert('Submit button clicked!');
+        });
+        
+        document.getElementById('cancel-btn').addEventListener('click', function() {
+            console.log('Cancel button clicked');
+            alert('Cancel button clicked!');
+        });
+        
+        // Test DOM scanner if available
+        setTimeout(() => {
+            if (window.domScanner) {
+                console.log('DOM Scanner available - running test scan');
+                const results = window.domScanner.scan();
+                console.log('Test scan results:', results);
+            } else {
+                console.log('DOM Scanner not available');
+            }
+        }, 2000);
+    </script>
+</body>
+</html>

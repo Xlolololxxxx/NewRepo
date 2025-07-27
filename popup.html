@@ -283,6 +283,7 @@
   <div class="tabs">
     <button class="tab active" data-tab="scan">Scan</button>
     <button class="tab" data-tab="results">Results</button>
+    <button class="tab" data-tab="automation">Automation</button>
     <button class="tab" data-tab="settings">Settings</button>
   </div>
 
@@ -331,8 +332,204 @@
     </div>
   </div>
 
+  <!-- Automation Tab -->
+  <div class="tab-content" id="automation-tab">
+    <div class="section">
+      <h3>Action Recording</h3>
+      <div id="recording-status" class="status info" style="display: none;"></div>
+      <button id="start-recording-btn" class="btn">🔴 Start Recording</button>
+      <button id="stop-recording-btn" class="btn secondary" disabled>⏹️ Stop Recording</button>
+      <div id="recording-info" style="font-size: 12px; color: #6c757d; margin-top: 8px;">
+        Click "Start Recording" to capture your actions for automation
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Browser Automation Control</h3>
+      <div id="browser-status" style="font-size: 12px; margin-bottom: 8px; color: #6c757d;">
+        Browser: Not active
+      </div>
+      <button id="launch-browser-btn" class="btn">🚀 Launch Automation Browser</button>
+      <button id="close-browser-btn" class="btn secondary" disabled>⏹️ Close Browser</button>
+      <div class="checkbox-group" style="margin-top: 8px;">
+        <label>
+          <input type="checkbox" id="headless-mode" checked> 
+          Headless mode (hidden browser)
+        </label>
+      </div>
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" id="use-user-profile" checked> 
+          Use Chrome profile (avoid detection)
+        </label>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Autonomous Automation</h3>
+      <div id="autonomous-status" style="font-size: 12px; margin-bottom: 8px; color: #6c757d;">
+        Ready for autonomous control
+      </div>
+      <input type="text" id="automation-goal" placeholder="Enter automation goal (e.g., 'Fill out contact form')" style="width: 100%; margin-bottom: 8px;">
+      <button id="start-autonomous-btn" class="btn">🤖 Start Autonomous Automation</button>
+      <button id="stop-autonomous-btn" class="btn secondary" disabled>⏸️ Stop Automation</button>
+      <div id="autonomous-progress" style="font-size: 12px; margin-top: 8px; display: none;">
+        <div>Progress: <span id="progress-text">Initializing...</span></div>
+        <div style="background: #f0f0f0; border-radius: 4px; overflow: hidden; margin-top: 4px;">
+          <div id="progress-bar" style="height: 6px; background: #007bff; width: 0%; transition: width 0.3s;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>AI Automation Assistant</h3>
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" id="ai-enabled" disabled> 
+          Enable AI-powered automation (requires API key)
+        </label>
+      </div>
+      <button id="generate-ai-suggestions-btn" class="btn secondary" disabled>🤖 Generate AI Suggestions</button>
+      <button id="test-ai-connection-btn" class="btn secondary">🔗 Test AI Connection</button>
+      <div id="ai-status" style="font-size: 12px; margin-top: 8px;"></div>
+    </div>
+
+    <div class="section">
+      <h3>Recorded Sessions</h3>
+      <div id="sessions-list" class="results empty">
+        No recorded sessions yet. Start recording to create automation sequences.
+      </div>
+      <button id="load-sessions-btn" class="btn secondary">📁 Load Sessions</button>
+    </div>
+
+    <div class="section">
+      <h3>Automation Instructions</h3>
+      <div id="instructions-list" class="results empty">
+        Record actions or generate AI suggestions to see automation instructions.
+      </div>
+      <button id="export-instructions-btn" class="btn secondary" disabled>📋 Export Instructions</button>
+    </div>
+  </div>
+
   <!-- Settings Tab -->
   <div class="tab-content" id="settings-tab">
+    <div class="section">
+      <h3>AI API Configuration</h3>
+      
+      <div class="select-group">
+        <label for="ai-provider">AI Provider:</label>
+        <select id="ai-provider">
+          <option value="openai">OpenAI (GPT-3.5/GPT-4)</option>
+          <option value="anthropic">Anthropic (Claude)</option>
+          <option value="custom">Custom API</option>
+        </select>
+      </div>
+
+      <div class="select-group">
+        <label for="ai-api-key">API Key:</label>
+        <input type="password" id="ai-api-key" placeholder="Enter your AI API key" style="width: 100%; padding: 6px 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 12px;">
+      </div>
+
+      <div class="select-group">
+        <label for="ai-endpoint">API Endpoint:</label>
+        <input type="url" id="ai-endpoint" placeholder="https://api.openai.com/v1/chat/completions" style="width: 100%; padding: 6px 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 12px;">
+      </div>
+
+      <div class="select-group">
+        <label for="ai-model">Model:</label>
+        <select id="ai-model">
+          <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+          <option value="gpt-4">GPT-4</option>
+          <option value="gpt-4-turbo">GPT-4 Turbo</option>
+          <option value="claude-3-sonnet">Claude 3 Sonnet</option>
+          <option value="claude-3-opus">Claude 3 Opus</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Browser Automation Settings</h3>
+      
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" id="browser-headless" checked> 
+          Launch browser in headless mode
+        </label>
+      </div>
+
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" id="use-profile" checked> 
+          Use Chrome profile to avoid detection
+        </label>
+      </div>
+
+      <div class="select-group">
+        <label for="automation-timeout">Automation timeout (seconds):</label>
+        <select id="automation-timeout">
+          <option value="15">15 seconds</option>
+          <option value="30" selected>30 seconds</option>
+          <option value="60">1 minute</option>
+          <option value="120">2 minutes</option>
+          <option value="300">5 minutes</option>
+        </select>
+      </div>
+
+      <div class="select-group">
+        <label for="step-delay">Delay between automation steps (ms):</label>
+        <select id="step-delay">
+          <option value="0">No delay</option>
+          <option value="250">250ms</option>
+          <option value="500" selected>500ms</option>
+          <option value="1000">1 second</option>
+          <option value="2000">2 seconds</option>
+        </select>
+      </div>
+
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" id="ai-recovery" checked> 
+          Enable AI-powered error recovery
+        </label>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Automation Settings</h3>
+      
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" id="auto-adapt"> 
+          Auto-adapt to page changes
+        </label>
+      </div>
+
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" id="record-mouse-position"> 
+          Record precise mouse positions
+        </label>
+      </div>
+
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" id="smart-waiting"> 
+          Smart waiting for elements
+        </label>
+      </div>
+
+      <div class="select-group">
+        <label for="action-delay">Action Delay (ms):</label>
+        <select id="action-delay">
+          <option value="0">No delay</option>
+          <option value="500">500ms</option>
+          <option value="1000" selected>1000ms</option>
+          <option value="2000">2000ms</option>
+          <option value="5000">5000ms</option>
+        </select>
+      </div>
+    </div>
+
     <div class="section">
       <h3>Scan Options</h3>
       
@@ -393,6 +590,8 @@
     </div>
   </div>
 
+  <script src="ai-service.js"></script>
+  <script src="browser-controller.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

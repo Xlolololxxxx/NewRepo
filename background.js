@@ -36,6 +36,35 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case 'HIGHLIGHT_ELEMENTS':
       highlightElements(message.data, sender.tab.id);
       break;
+
+    // Browser automation control messages
+    case 'LAUNCH_AUTOMATION_BROWSER':
+      handleBrowserLaunch(message.config, sendResponse);
+      return true;
+      
+    case 'CLOSE_AUTOMATION_BROWSER':
+      handleBrowserClose(sendResponse);
+      return true;
+      
+    case 'BROWSER_ACTION':
+      handleBrowserAction(message, sendResponse);
+      return true;
+      
+    case 'GET_BROWSER_STATUS':
+      handleGetBrowserStatus(sendResponse);
+      return true;
+      
+    case 'CHECK_PATH_EXISTS':
+      handleCheckPathExists(message.path, sendResponse);
+      return true;
+      
+    case 'GET_CHROME_PROFILE_INFO':
+      handleGetChromeProfileInfo(sendResponse);
+      return true;
+      
+    case 'GET_CURRENT_PAGE_STATE':
+      handleGetCurrentPageState(sendResponse);
+      return true;
       
     default:
       console.warn('Unknown message type:', message.type);
@@ -273,4 +302,405 @@ function highlightPageElements(elements) {
       console.error('Failed to highlight element:', elementInfo, error);
     }
   });
+}
+
+// Browser Automation Management
+let automationBrowser = null;
+let automationPage = null;
+
+// Handle browser launch for automation
+async function handleBrowserLaunch(config, sendResponse) {
+  try {
+    if (automationBrowser) {
+      sendResponse({ 
+        success: false, 
+        error: 'Automation browser already running. Close it first.' 
+      });
+      return;
+    }
+
+    console.log('Launching automation browser with config:', config);
+    
+    // Since we're in a Chrome extension, we can't directly use Puppeteer
+    // Instead, we'll create a new Chrome window with specific parameters
+    const windowConfig = {
+      url: 'about:blank',
+      type: 'normal',
+      focused: !config.headless,
+      state: config.headless ? 'minimized' : 'normal',
+      width: config.defaultViewport ? config.defaultViewport.width : 1280,
+      height: config.defaultViewport ? config.defaultViewport.height : 720
+    };
+
+    const window = await chrome.windows.create(windowConfig);
+    const tab = window.tabs[0];
+
+    // Store automation browser info
+    automationBrowser = {
+      windowId: window.id,
+      tabId: tab.id,
+      config: config,
+      isHeadless: config.headless,
+      profilePath: extractProfilePath(config.args)
+    };
+
+    // If headless mode, minimize the window
+    if (config.headless) {
+      await chrome.windows.update(window.id, { state: 'minimized' });
+    }
+
+    sendResponse({ 
+      success: true, 
+      browser: { windowId: window.id, tabId: tab.id },
+      page: { tabId: tab.id }
+    });
+
+  } catch (error) {
+    console.error('Failed to launch automation browser:', error);
+    sendResponse({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+}
+
+// Handle browser close
+async function handleBrowserClose(sendResponse) {
+  try {
+    if (!automationBrowser) {
+      sendResponse({ success: true, message: 'No automation browser running' });
+      return;
+    }
+
+    await chrome.windows.remove(automationBrowser.windowId);
+    automationBrowser = null;
+    automationPage = null;
+
+    sendResponse({ success: true });
+  } catch (error) {
+    console.error('Failed to close automation browser:', error);
+    sendResponse({ success: false, error: error.message });
+  }
+}
+
+// Handle browser actions
+async function handleBrowserAction(message, sendResponse) {
+  try {
+    if (!automationBrowser) {
+      sendResponse({ success: false, error: 'No automation browser running' });
+      return;
+    }
+
+    const { action, selector, value, options } = message;
+    const tabId = automationBrowser.tabId;
+
+    let result;
+    switch (action) {
+      case 'click':
+        result = await executeClick(tabId, selector, options);
+        break;
+      case 'type':
+        result = await executeType(tabId, selector, value, options);
+        break;
+      case 'select':
+        result = await executeSelect(tabId, selector, value, options);
+        break;
+      case 'wait':
+        result = await executeWait(tabId, message.condition, options);
+        break;
+      case 'navigate':
+        result = await executeNavigate(tabId, message.url, options);
+        break;
+      case 'scroll':
+        result = await executeScroll(tabId, options);
+        break;
+      case 'screenshot':
+        result = await executeScreenshot(tabId, options);
+        break;
+      case 'evaluate':
+        result = await executeEvaluate(tabId, message.script, options);
+        break;
+      default:
+        throw new Error(`Unknown browser action: ${action}`);
+    }
+
+    sendResponse({ success: true, result: result });
+  } catch (error) {
+    console.error('Browser action failed:', error);
+    sendResponse({ success: false, error: error.message });
+  }
+}
+
+// Browser action implementations
+async function executeClick(tabId, selector, options = {}) {
+  const results = await chrome.scripting.executeScript({
+    target: { tabId: tabId },
+    func: (selector, options) => {
+      const element = document.querySelector(selector);
+      if (!element) {
+        throw new Error(`Element not found: ${selector}`);
+      }
+      
+      const rect = element.getBoundingClientRect();
+      if (rect.width === 0 && rect.height === 0) {
+        throw new Error(`Element not visible: ${selector}`);
+      }
+      
+      element.click();
+      return { clicked: true, selector: selector };
+    },
+    args: [selector, options]
+  });
+  
+  return results[0].result;
+}
+
+async function executeType(tabId, selector, value, options = {}) {
+  const results = await chrome.scripting.executeScript({
+    target: { tabId: tabId },
+    func: (selector, value, options) => {
+      const element = document.querySelector(selector);
+      if (!element) {
+        throw new Error(`Element not found: ${selector}`);
+      }
+      
+      // Clear existing value if specified
+      if (options.clear !== false) {
+        element.value = '';
+      }
+      
+      // Focus element
+      element.focus();
+      
+      // Set value
+      if (element.tagName.toLowerCase() === 'input' || element.tagName.toLowerCase() === 'textarea') {
+        element.value = value;
+        
+        // Trigger input events
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+        element.dispatchEvent(new Event('change', { bubbles: true }));
+      } else {
+        element.textContent = value;
+      }
+      
+      return { typed: true, selector: selector, value: value };
+    },
+    args: [selector, value, options]
+  });
+  
+  return results[0].result;
+}
+
+async function executeSelect(tabId, selector, value, options = {}) {
+  const results = await chrome.scripting.executeScript({
+    target: { tabId: tabId },
+    func: (selector, value, options) => {
+      const element = document.querySelector(selector);
+      if (!element) {
+        throw new Error(`Element not found: ${selector}`);
+      }
+      
+      if (element.tagName.toLowerCase() !== 'select') {
+        throw new Error(`Element is not a select: ${selector}`);
+      }
+      
+      element.value = value;
+      element.dispatchEvent(new Event('change', { bubbles: true }));
+      
+      return { selected: true, selector: selector, value: value };
+    },
+    args: [selector, value, options]
+  });
+  
+  return results[0].result;
+}
+
+async function executeWait(tabId, condition, options = {}) {
+  const timeout = options.timeout || 30000;
+  const startTime = Date.now();
+  
+  while (Date.now() - startTime < timeout) {
+    try {
+      const results = await chrome.scripting.executeScript({
+        target: { tabId: tabId },
+        func: (condition) => {
+          if (typeof condition === 'string') {
+            // Wait for selector
+            const element = document.querySelector(condition);
+            return element && element.offsetParent !== null;
+          } else if (typeof condition === 'number') {
+            // Wait for time
+            return true;
+          }
+          return false;
+        },
+        args: [condition]
+      });
+      
+      if (results[0].result) {
+        return { waited: true, condition: condition };
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 100));
+    } catch (error) {
+      console.error('Wait condition check failed:', error);
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+  
+  throw new Error(`Wait timeout after ${timeout}ms for condition: ${condition}`);
+}
+
+async function executeNavigate(tabId, url, options = {}) {
+  await chrome.tabs.update(tabId, { url: url });
+  
+  // Wait for navigation to complete
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error('Navigation timeout'));
+    }, options.timeout || 30000);
+    
+    const listener = (updatedTabId, changeInfo) => {
+      if (updatedTabId === tabId && changeInfo.status === 'complete') {
+        chrome.tabs.onUpdated.removeListener(listener);
+        clearTimeout(timeout);
+        resolve({ navigated: true, url: url });
+      }
+    };
+    
+    chrome.tabs.onUpdated.addListener(listener);
+  });
+}
+
+async function executeScroll(tabId, options = {}) {
+  const results = await chrome.scripting.executeScript({
+    target: { tabId: tabId },
+    func: (options) => {
+      const scrollX = options.x || 0;
+      const scrollY = options.y || window.innerHeight;
+      
+      window.scrollBy(scrollX, scrollY);
+      
+      return { 
+        scrolled: true, 
+        x: scrollX, 
+        y: scrollY,
+        currentScrollX: window.scrollX,
+        currentScrollY: window.scrollY
+      };
+    },
+    args: [options]
+  });
+  
+  return results[0].result;
+}
+
+async function executeScreenshot(tabId, options = {}) {
+  const screenshotData = await chrome.tabs.captureVisibleTab(
+    automationBrowser.windowId,
+    { format: 'png', quality: options.quality || 90 }
+  );
+  
+  return { 
+    screenshot: true, 
+    data: screenshotData,
+    format: 'png'
+  };
+}
+
+async function executeEvaluate(tabId, script, options = {}) {
+  const results = await chrome.scripting.executeScript({
+    target: { tabId: tabId },
+    func: new Function('options', script),
+    args: [options]
+  });
+  
+  return results[0].result;
+}
+
+// Get browser status
+async function handleGetBrowserStatus(sendResponse) {
+  const status = {
+    isActive: !!automationBrowser,
+    browser: automationBrowser,
+    timestamp: Date.now()
+  };
+  
+  if (automationBrowser) {
+    try {
+      const tab = await chrome.tabs.get(automationBrowser.tabId);
+      status.currentUrl = tab.url;
+      status.title = tab.title;
+    } catch (error) {
+      status.error = 'Browser tab not accessible';
+    }
+  }
+  
+  sendResponse({ status: status });
+}
+
+// Handle path existence check
+async function handleCheckPathExists(path, sendResponse) {
+  // In Chrome extension context, we can't directly check file system paths
+  // This would need to be implemented with native messaging or file API
+  sendResponse({ exists: false, message: 'Path checking not available in extension context' });
+}
+
+// Handle Chrome profile info
+async function handleGetChromeProfileInfo(sendResponse) {
+  try {
+    // Try to get profile information from Chrome APIs
+    const profileInfo = {
+      path: null,
+      name: 'Default',
+      isDefault: true
+    };
+    
+    // In a real implementation, this would need native messaging
+    // or additional permissions to access profile information
+    
+    sendResponse({ profileInfo: profileInfo });
+  } catch (error) {
+    sendResponse({ profileInfo: null, error: error.message });
+  }
+}
+
+// Handle current page state
+async function handleGetCurrentPageState(sendResponse) {
+  try {
+    if (!automationBrowser) {
+      sendResponse({ pageState: null, error: 'No automation browser running' });
+      return;
+    }
+    
+    const results = await chrome.scripting.executeScript({
+      target: { tabId: automationBrowser.tabId },
+      func: () => {
+        return {
+          url: window.location.href,
+          title: document.title,
+          readyState: document.readyState,
+          elementCount: document.querySelectorAll('*').length,
+          viewport: {
+            width: window.innerWidth,
+            height: window.innerHeight,
+            scrollX: window.scrollX,
+            scrollY: window.scrollY
+          }
+        };
+      }
+    });
+    
+    sendResponse({ pageState: results[0].result });
+  } catch (error) {
+    sendResponse({ pageState: null, error: error.message });
+  }
+}
+
+// Utility function to extract profile path from launch args
+function extractProfilePath(args) {
+  if (!args) return null;
+  
+  const userDataArg = args.find(arg => arg.startsWith('--user-data-dir='));
+  return userDataArg ? userDataArg.split('=')[1] : null;
 }

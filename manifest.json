@@ -7,7 +7,9 @@
   "permissions": [
     "activeTab",
     "storage",
-    "scripting"
+    "scripting",
+    "tabs",
+    "webRequest"
   ],
   
   "host_permissions": [
@@ -21,7 +23,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "js": ["content.js", "action-recorder.js"],
       "run_at": "document_end"
     }
   ],
@@ -46,7 +48,7 @@
   
   "web_accessible_resources": [
     {
-      "resources": ["dom-scanner.js"],
+      "resources": ["dom-scanner.js", "ai-service.js", "browser-controller.js"],
       "matches": ["<all_urls>"]
     }
   ]
