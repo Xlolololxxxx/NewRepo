@@ -41,6 +41,14 @@ function setupEventListeners() {
   document.getElementById('export-json-btn').addEventListener('click', exportAsJSON);
   document.getElementById('export-csv-btn').addEventListener('click', exportAsCSV);
   
+  // Automation buttons
+  document.getElementById('start-recording-btn').addEventListener('click', startRecording);
+  document.getElementById('stop-recording-btn').addEventListener('click', stopRecording);
+  document.getElementById('generate-ai-suggestions-btn').addEventListener('click', generateAISuggestions);
+  document.getElementById('test-ai-connection-btn').addEventListener('click', testAIConnection);
+  document.getElementById('load-sessions-btn').addEventListener('click', loadRecordedSessions);
+  document.getElementById('export-instructions-btn').addEventListener('click', exportInstructions);
+  
   // Settings buttons
   document.getElementById('save-settings-btn').addEventListener('click', saveSettings);
   document.getElementById('reset-settings-btn').addEventListener('click', resetSettings);
@@ -50,6 +58,18 @@ function setupEventListeners() {
   document.getElementById('auto-scan').addEventListener('change', onSettingChange);
   document.getElementById('highlight-elements').addEventListener('change', onSettingChange);
   document.getElementById('include-hidden').addEventListener('change', onSettingChange);
+  
+  // AI settings listeners
+  document.getElementById('ai-api-key').addEventListener('change', onAISettingChange);
+  document.getElementById('ai-endpoint').addEventListener('change', onAISettingChange);
+  document.getElementById('ai-model').addEventListener('change', onAISettingChange);
+  document.getElementById('ai-provider').addEventListener('change', onAIProviderChange);
+  
+  // Automation settings listeners
+  document.getElementById('auto-adapt').addEventListener('change', onSettingChange);
+  document.getElementById('record-mouse-position').addEventListener('change', onSettingChange);
+  document.getElementById('smart-waiting').addEventListener('change', onSettingChange);
+  document.getElementById('action-delay').addEventListener('change', onSettingChange);
   
   // Selector checkboxes
   ['buttons', 'inputs', 'links', 'clickable', 'forms'].forEach(type => {
@@ -91,6 +111,12 @@ async function loadSettings() {
     document.getElementById('auto-scan').checked = settings.autoScan || false;
     document.getElementById('highlight-elements').checked = settings.highlightElements !== false;
     document.getElementById('include-hidden').checked = settings.includeHidden || false;
+    
+    // Automation settings
+    document.getElementById('auto-adapt').checked = settings.autoAdapt || false;
+    document.getElementById('record-mouse-position').checked = settings.recordMousePosition || false;
+    document.getElementById('smart-waiting').checked = settings.smartWaiting || true;
+    document.getElementById('action-delay').value = settings.actionDelay || 1000;
     
     // Selector settings
     const selectors = settings.selectedSelectors || ['button', 'input', 'a', 'div[role="button"]', 'form'];
@@ -373,6 +399,10 @@ async function saveSettings() {
       autoScan: document.getElementById('auto-scan').checked,
       highlightElements: document.getElementById('highlight-elements').checked,
       includeHidden: document.getElementById('include-hidden').checked,
+      autoAdapt: document.getElementById('auto-adapt').checked,
+      recordMousePosition: document.getElementById('record-mouse-position').checked,
+      smartWaiting: document.getElementById('smart-waiting').checked,
+      actionDelay: parseInt(document.getElementById('action-delay').value),
       selectedSelectors: getSelectedSelectors()
     };
     
@@ -441,3 +471,435 @@ function escapeHtml(text) {
 
 // Make functions available for onclick handlers
 window.highlightSingleElement = highlightSingleElement;
+
+// Global variables for automation features
+let currentInstructions = [];
+let recordingState = { isRecording: false };
+
+// Action recording functions
+async function startRecording() {
+  const startBtn = document.getElementById('start-recording-btn');
+  const stopBtn = document.getElementById('stop-recording-btn');
+  
+  try {
+    const sessionName = `session_${Date.now()}`;
+    const response = await chrome.tabs.sendMessage(currentTab.id, {
+      type: 'START_RECORDING',
+      sessionName: sessionName
+    });
+    
+    if (response.success) {
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+      showRecordingStatus('Recording started... Perform actions on the page', 'info');
+      
+      // Update recording info periodically
+      updateRecordingInfo();
+    } else {
+      showRecordingStatus(`Failed to start recording: ${response.error}`, 'error');
+    }
+  } catch (error) {
+    console.error('Failed to start recording:', error);
+    showRecordingStatus('Failed to start recording. Please refresh the page.', 'error');
+  }
+}
+
+async function stopRecording() {
+  const startBtn = document.getElementById('start-recording-btn');
+  const stopBtn = document.getElementById('stop-recording-btn');
+  
+  try {
+    const response = await chrome.tabs.sendMessage(currentTab.id, {
+      type: 'STOP_RECORDING'
+    });
+    
+    if (response.success) {
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+      currentInstructions = response.instructions || [];
+      
+      showRecordingStatus(`Recording stopped. Captured ${response.session.actions.length} actions.`, 'success');
+      displayInstructions(currentInstructions);
+      document.getElementById('export-instructions-btn').disabled = false;
+    } else {
+      showRecordingStatus(`Failed to stop recording: ${response.error}`, 'error');
+    }
+  } catch (error) {
+    console.error('Failed to stop recording:', error);
+    showRecordingStatus('Failed to stop recording', 'error');
+  }
+}
+
+async function updateRecordingInfo() {
+  try {
+    const response = await chrome.tabs.sendMessage(currentTab.id, {
+      type: 'GET_RECORDING_STATE'
+    });
+    
+    if (response.success && response.data.isRecording) {
+      const info = document.getElementById('recording-info');
+      const duration = Math.floor(response.data.duration / 1000);
+      info.textContent = `Recording: ${response.data.actionsCount} actions, ${duration}s elapsed`;
+      
+      // Continue updating if still recording
+      setTimeout(updateRecordingInfo, 1000);
+    }
+  } catch (error) {
+    // Recording likely stopped or page changed
+  }
+}
+
+// AI automation functions
+async function generateAISuggestions() {
+  if (!scanResults) {
+    showStatus('Please scan the page first before generating AI suggestions', 'error');
+    return;
+  }
+  
+  const generateBtn = document.getElementById('generate-ai-suggestions-btn');
+  const originalText = generateBtn.textContent;
+  
+  try {
+    generateBtn.textContent = '🤖 Generating...';
+    generateBtn.disabled = true;
+    
+    showStatus('Generating AI automation suggestions...', 'info');
+    
+    const response = await chrome.tabs.sendMessage(currentTab.id, {
+      type: 'GENERATE_AI_SUGGESTIONS',
+      data: {
+        scanResults: scanResults,
+        userGoal: '' // Could add user goal input later
+      }
+    });
+    
+    if (response.success) {
+      const suggestions = response.data;
+      displayAISuggestions(suggestions);
+      showStatus('AI suggestions generated successfully', 'success');
+    } else {
+      showStatus(`Failed to generate AI suggestions: ${response.error}`, 'error');
+    }
+  } catch (error) {
+    console.error('Failed to generate AI suggestions:', error);
+    showStatus('Failed to generate AI suggestions. Check your AI configuration.', 'error');
+  } finally {
+    generateBtn.textContent = originalText;
+    generateBtn.disabled = false;
+  }
+}
+
+async function testAIConnection() {
+  const testBtn = document.getElementById('test-ai-connection-btn');
+  const originalText = testBtn.textContent;
+  
+  try {
+    testBtn.textContent = '🔗 Testing...';
+    testBtn.disabled = true;
+    
+    // Save current AI settings first
+    await saveAISettings();
+    
+    // Test by injecting AI service and testing
+    const response = await chrome.scripting.executeScript({
+      target: { tabId: currentTab.id },
+      func: async function() {
+        // Load AI service
+        const script = document.createElement('script');
+        script.src = chrome.runtime.getURL('ai-service.js');
+        document.head.appendChild(script);
+        
+        return new Promise(resolve => {
+          script.onload = async () => {
+            try {
+              await window.aiService.initialize();
+              const result = await window.aiService.testConnection();
+              resolve(result);
+            } catch (error) {
+              resolve({ success: false, error: error.message });
+            }
+          };
+        });
+      }
+    });
+    
+    const result = response[0].result;
+    
+    if (result.success) {
+      showAIStatus('✅ AI connection successful', 'success');
+      document.getElementById('ai-enabled').disabled = false;
+      document.getElementById('generate-ai-suggestions-btn').disabled = false;
+    } else {
+      showAIStatus(`❌ AI connection failed: ${result.error}`, 'error');
+    }
+  } catch (error) {
+    console.error('AI connection test failed:', error);
+    showAIStatus('❌ AI connection test failed', 'error');
+  } finally {
+    testBtn.textContent = originalText;
+    testBtn.disabled = false;
+  }
+}
+
+async function loadRecordedSessions() {
+  try {
+    const sessions = await chrome.storage.local.get(['recordedSessions']);
+    const sessionsList = document.getElementById('sessions-list');
+    
+    if (!sessions.recordedSessions || Object.keys(sessions.recordedSessions).length === 0) {
+      sessionsList.innerHTML = '<div class="results empty">No recorded sessions found.</div>';
+      sessionsList.className = 'results empty';
+      return;
+    }
+    
+    sessionsList.className = 'results';
+    let html = '';
+    
+    Object.entries(sessions.recordedSessions).forEach(([name, session]) => {
+      const duration = Math.floor(session.duration / 1000);
+      html += `
+        <div class="element-item" onclick="loadSession('${name}')">
+          <div class="element-tag">${name}</div>
+          <div class="element-text">${session.actions.length} actions, ${duration}s duration</div>
+          <div class="element-position">${session.pageContext.url}</div>
+        </div>
+      `;
+    });
+    
+    sessionsList.innerHTML = html;
+    showStatus(`Loaded ${Object.keys(sessions.recordedSessions).length} recorded sessions`, 'success');
+  } catch (error) {
+    console.error('Failed to load sessions:', error);
+    showStatus('Failed to load recorded sessions', 'error');
+  }
+}
+
+async function loadSession(sessionName) {
+  try {
+    const sessions = await chrome.storage.local.get(['recordedSessions']);
+    const session = sessions.recordedSessions[sessionName];
+    
+    if (session) {
+      // Generate instructions from session
+      const instructions = generateInstructionsFromSession(session);
+      currentInstructions = instructions;
+      displayInstructions(instructions);
+      document.getElementById('export-instructions-btn').disabled = false;
+      showStatus(`Loaded session: ${sessionName}`, 'success');
+    }
+  } catch (error) {
+    console.error('Failed to load session:', error);
+    showStatus('Failed to load session', 'error');
+  }
+}
+
+function generateInstructionsFromSession(session) {
+  return session.actions.map((action, index) => ({
+    step: index + 1,
+    action: action.type,
+    description: generateActionDescription(action),
+    selector: action.element?.selectors?.[0] || '',
+    value: action.value || null,
+    timestamp: action.timestamp
+  }));
+}
+
+function generateActionDescription(action) {
+  switch (action.type) {
+    case 'click':
+      const elementText = action.element.text || action.element.attributes?.['aria-label'] || '';
+      return `Click ${action.element.tag}${elementText ? ` "${elementText}"` : ''}`;
+    case 'input':
+      return `Type "${action.value}" into ${action.element.tag}`;
+    case 'change':
+      return `Select "${action.value}" in ${action.element.tag}`;
+    case 'submit':
+      return `Submit form`;
+    default:
+      return `Perform ${action.type} action`;
+  }
+}
+
+function exportInstructions() {
+  if (!currentInstructions.length) {
+    showStatus('No instructions to export', 'error');
+    return;
+  }
+  
+  const dataStr = JSON.stringify(currentInstructions, null, 2);
+  const dataBlob = new Blob([dataStr], { type: 'application/json' });
+  
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(dataBlob);
+  link.download = `automation-instructions-${new Date().toISOString().slice(0, 10)}.json`;
+  link.click();
+  
+  showStatus('Automation instructions exported', 'success');
+}
+
+// Display functions
+function displayInstructions(instructions) {
+  const instructionsList = document.getElementById('instructions-list');
+  
+  if (!instructions.length) {
+    instructionsList.innerHTML = '<div class="results empty">No instructions available.</div>';
+    instructionsList.className = 'results empty';
+    return;
+  }
+  
+  instructionsList.className = 'results';
+  let html = '';
+  
+  instructions.forEach((instruction, index) => {
+    html += `
+      <div class="element-item">
+        <div class="element-tag">Step ${instruction.step}: ${instruction.action}</div>
+        <div class="element-text">${escapeHtml(instruction.description)}</div>
+        <div class="element-position">Selector: ${escapeHtml(instruction.selector)}</div>
+      </div>
+    `;
+  });
+  
+  instructionsList.innerHTML = html;
+}
+
+function displayAISuggestions(suggestions) {
+  const instructionsList = document.getElementById('instructions-list');
+  
+  if (!suggestions.automationSteps || !suggestions.automationSteps.length) {
+    instructionsList.innerHTML = '<div class="results empty">No AI suggestions available.</div>';
+    instructionsList.className = 'results empty';
+    return;
+  }
+  
+  currentInstructions = suggestions.automationSteps;
+  document.getElementById('export-instructions-btn').disabled = false;
+  
+  instructionsList.className = 'results';
+  let html = '';
+  
+  suggestions.automationSteps.forEach((step, index) => {
+    const confidence = Math.round(step.confidence * 100);
+    html += `
+      <div class="element-item">
+        <div class="element-tag">Step ${step.step}: ${step.action} (${confidence}% confidence)</div>
+        <div class="element-text">${escapeHtml(step.description)}</div>
+        <div class="element-position">Selector: ${escapeHtml(step.selector)}</div>
+      </div>
+    `;
+  });
+  
+  // Add risks and recommendations
+  if (suggestions.risks && suggestions.risks.length) {
+    html += '<div style="margin-top: 10px; font-weight: bold; color: #dc3545;">⚠️ Risks:</div>';
+    suggestions.risks.forEach(risk => {
+      html += `<div style="font-size: 11px; color: #dc3545;">• ${escapeHtml(risk)}</div>`;
+    });
+  }
+  
+  if (suggestions.recommendations && suggestions.recommendations.length) {
+    html += '<div style="margin-top: 10px; font-weight: bold; color: #28a745;">💡 Recommendations:</div>';
+    suggestions.recommendations.forEach(rec => {
+      html += `<div style="font-size: 11px; color: #28a745;">• ${escapeHtml(rec)}</div>`;
+    });
+  }
+  
+  instructionsList.innerHTML = html;
+}
+
+function showRecordingStatus(message, type = 'info') {
+  const statusEl = document.getElementById('recording-status');
+  statusEl.textContent = message;
+  statusEl.className = `status ${type}`;
+  statusEl.style.display = 'block';
+  
+  if (type === 'success') {
+    setTimeout(() => {
+      statusEl.style.display = 'none';
+    }, 3000);
+  }
+}
+
+function showAIStatus(message, type = 'info') {
+  const statusEl = document.getElementById('ai-status');
+  statusEl.textContent = message;
+  statusEl.style.color = type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#6c757d';
+}
+
+// Settings functions
+async function saveAISettings() {
+  const aiSettings = {
+    aiApiKey: document.getElementById('ai-api-key').value,
+    aiEndpoint: document.getElementById('ai-endpoint').value,
+    aiModel: document.getElementById('ai-model').value,
+    aiProvider: document.getElementById('ai-provider').value
+  };
+  
+  await chrome.storage.sync.set(aiSettings);
+}
+
+async function loadAISettings() {
+  const settings = await chrome.storage.sync.get(['aiApiKey', 'aiEndpoint', 'aiModel', 'aiProvider']);
+  
+  document.getElementById('ai-api-key').value = settings.aiApiKey || '';
+  document.getElementById('ai-endpoint').value = settings.aiEndpoint || 'https://api.openai.com/v1/chat/completions';
+  document.getElementById('ai-model').value = settings.aiModel || 'gpt-3.5-turbo';
+  document.getElementById('ai-provider').value = settings.aiProvider || 'openai';
+  
+  // Update AI enabled state
+  const hasApiKey = !!settings.aiApiKey;
+  document.getElementById('ai-enabled').disabled = !hasApiKey;
+  document.getElementById('generate-ai-suggestions-btn').disabled = !hasApiKey;
+  
+  if (hasApiKey) {
+    showAIStatus('✅ AI API key configured', 'success');
+  } else {
+    showAIStatus('❌ AI API key not configured', 'error');
+  }
+}
+
+function onAISettingChange() {
+  setTimeout(saveAISettings, 500);
+  setTimeout(loadAISettings, 600); // Reload to update UI state
+}
+
+function onAIProviderChange() {
+  const provider = document.getElementById('ai-provider').value;
+  const endpointField = document.getElementById('ai-endpoint');
+  const modelField = document.getElementById('ai-model');
+  
+  // Update default endpoint and model based on provider
+  switch (provider) {
+    case 'openai':
+      endpointField.value = 'https://api.openai.com/v1/chat/completions';
+      modelField.innerHTML = `
+        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+        <option value="gpt-4">GPT-4</option>
+        <option value="gpt-4-turbo">GPT-4 Turbo</option>
+      `;
+      break;
+    case 'anthropic':
+      endpointField.value = 'https://api.anthropic.com/v1/messages';
+      modelField.innerHTML = `
+        <option value="claude-3-sonnet">Claude 3 Sonnet</option>
+        <option value="claude-3-opus">Claude 3 Opus</option>
+        <option value="claude-3-haiku">Claude 3 Haiku</option>
+      `;
+      break;
+    case 'custom':
+      endpointField.value = '';
+      modelField.innerHTML = '<option value="custom">Custom Model</option>';
+      break;
+  }
+  
+  onAISettingChange();
+}
+
+// Load AI settings when popup loads
+document.addEventListener('DOMContentLoaded', async () => {
+  // ... existing code ...
+  await loadAISettings();
+});
+
+// Make functions available globally
+window.loadSession = loadSession;

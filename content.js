@@ -16,6 +16,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       highlightElement(message.selector, message.highlight);
       break;
       
+    case 'HIGHLIGHT_ELEMENTS':
+      highlightMultipleElements(message.data);
+      break;
+      
     case 'CLEAR_HIGHLIGHTS':
       clearHighlights();
       break;
@@ -26,6 +30,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       
     case 'SIMULATE_CLICK':
       simulateClick(message.selector, sendResponse);
+      return true;
+      
+    case 'START_RECORDING':
+      startActionRecording(message.sessionName, sendResponse);
+      return true;
+      
+    case 'STOP_RECORDING':
+      stopActionRecording(sendResponse);
+      return true;
+      
+    case 'GET_RECORDING_STATE':
+      getRecordingState(sendResponse);
+      return true;
+      
+    case 'GENERATE_AI_SUGGESTIONS':
+      generateAISuggestions(message.data, sendResponse);
       return true;
       
     default:
@@ -505,6 +525,24 @@ function highlightElement(selector, highlight = true) {
   }
 }
 
+// Highlight multiple elements
+function highlightMultipleElements(elements) {
+  try {
+    clearHighlights(); // Clear existing highlights first
+    
+    elements.forEach((elementInfo, index) => {
+      const selector = elementInfo.selectors ? elementInfo.selectors[0] : elementInfo.selector;
+      if (selector) {
+        setTimeout(() => {
+          highlightElement(selector, true);
+        }, index * 50); // Stagger highlights for visual effect
+      }
+    });
+  } catch (error) {
+    console.error('Failed to highlight multiple elements:', error);
+  }
+}
+
 // Clear all highlights
 function clearHighlights() {
   document.querySelectorAll('*').forEach(el => {
@@ -585,3 +623,96 @@ window.domScanner = {
   clearHighlights: clearHighlights,
   getPageInfo: getPageInfo
 };
+
+// Action recording functions
+function startActionRecording(sessionName, sendResponse) {
+  try {
+    const success = window.actionRecorder.startRecording(sessionName);
+    if (sendResponse) {
+      sendResponse({ success: success, message: success ? 'Recording started' : 'Failed to start recording' });
+    }
+  } catch (error) {
+    console.error('Failed to start recording:', error);
+    if (sendResponse) {
+      sendResponse({ success: false, error: error.message });
+    }
+  }
+}
+
+function stopActionRecording(sendResponse) {
+  try {
+    const session = window.actionRecorder.stopRecording();
+    if (session) {
+      // Save session and generate instructions
+      window.actionRecorder.saveSession(session);
+      const instructions = window.actionRecorder.generateAutomationInstructions(session);
+      
+      if (sendResponse) {
+        sendResponse({ 
+          success: true, 
+          session: session,
+          instructions: instructions,
+          message: `Recording stopped. Captured ${session.actions.length} actions.`
+        });
+      }
+    } else {
+      if (sendResponse) {
+        sendResponse({ success: false, error: 'No recording in progress' });
+      }
+    }
+  } catch (error) {
+    console.error('Failed to stop recording:', error);
+    if (sendResponse) {
+      sendResponse({ success: false, error: error.message });
+    }
+  }
+}
+
+function getRecordingState(sendResponse) {
+  try {
+    const state = window.actionRecorder.getRecordingState();
+    if (sendResponse) {
+      sendResponse({ success: true, data: state });
+    }
+  } catch (error) {
+    console.error('Failed to get recording state:', error);
+    if (sendResponse) {
+      sendResponse({ success: false, error: error.message });
+    }
+  }
+}
+
+// AI suggestion generation
+async function generateAISuggestions(data, sendResponse) {
+  try {
+    // Load AI service dynamically
+    if (!window.aiService) {
+      const script = document.createElement('script');
+      script.src = chrome.runtime.getURL('ai-service.js');
+      document.head.appendChild(script);
+      
+      // Wait for script to load
+      await new Promise(resolve => {
+        script.onload = resolve;
+        setTimeout(resolve, 1000); // Fallback timeout
+      });
+    }
+
+    if (window.aiService && window.aiService.isReady()) {
+      const suggestions = await window.aiService.generateAutomationSuggestions(data.scanResults, data.userGoal);
+      
+      if (sendResponse) {
+        sendResponse({ success: true, data: suggestions });
+      }
+    } else {
+      if (sendResponse) {
+        sendResponse({ success: false, error: 'AI service not configured. Please set up your AI API key in settings.' });
+      }
+    }
+  } catch (error) {
+    console.error('Failed to generate AI suggestions:', error);
+    if (sendResponse) {
+      sendResponse({ success: false, error: error.message });
+    }
+  }
+}

@@ -283,6 +283,7 @@
   <div class="tabs">
     <button class="tab active" data-tab="scan">Scan</button>
     <button class="tab" data-tab="results">Results</button>
+    <button class="tab" data-tab="automation">Automation</button>
     <button class="tab" data-tab="settings">Settings</button>
   </div>
 
@@ -331,8 +332,120 @@
     </div>
   </div>
 
+  <!-- Automation Tab -->
+  <div class="tab-content" id="automation-tab">
+    <div class="section">
+      <h3>Action Recording</h3>
+      <div id="recording-status" class="status info" style="display: none;"></div>
+      <button id="start-recording-btn" class="btn">🔴 Start Recording</button>
+      <button id="stop-recording-btn" class="btn secondary" disabled>⏹️ Stop Recording</button>
+      <div id="recording-info" style="font-size: 12px; color: #6c757d; margin-top: 8px;">
+        Click "Start Recording" to capture your actions for automation
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>AI Automation Assistant</h3>
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" id="ai-enabled" disabled> 
+          Enable AI-powered automation (requires API key)
+        </label>
+      </div>
+      <button id="generate-ai-suggestions-btn" class="btn secondary" disabled>🤖 Generate AI Suggestions</button>
+      <button id="test-ai-connection-btn" class="btn secondary">🔗 Test AI Connection</button>
+      <div id="ai-status" style="font-size: 12px; margin-top: 8px;"></div>
+    </div>
+
+    <div class="section">
+      <h3>Recorded Sessions</h3>
+      <div id="sessions-list" class="results empty">
+        No recorded sessions yet. Start recording to create automation sequences.
+      </div>
+      <button id="load-sessions-btn" class="btn secondary">📁 Load Sessions</button>
+    </div>
+
+    <div class="section">
+      <h3>Automation Instructions</h3>
+      <div id="instructions-list" class="results empty">
+        Record actions or generate AI suggestions to see automation instructions.
+      </div>
+      <button id="export-instructions-btn" class="btn secondary" disabled>📋 Export Instructions</button>
+    </div>
+  </div>
+
   <!-- Settings Tab -->
   <div class="tab-content" id="settings-tab">
+    <div class="section">
+      <h3>AI API Configuration</h3>
+      
+      <div class="select-group">
+        <label for="ai-provider">AI Provider:</label>
+        <select id="ai-provider">
+          <option value="openai">OpenAI (GPT-3.5/GPT-4)</option>
+          <option value="anthropic">Anthropic (Claude)</option>
+          <option value="custom">Custom API</option>
+        </select>
+      </div>
+
+      <div class="select-group">
+        <label for="ai-api-key">API Key:</label>
+        <input type="password" id="ai-api-key" placeholder="Enter your AI API key" style="width: 100%; padding: 6px 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 12px;">
+      </div>
+
+      <div class="select-group">
+        <label for="ai-endpoint">API Endpoint:</label>
+        <input type="url" id="ai-endpoint" placeholder="https://api.openai.com/v1/chat/completions" style="width: 100%; padding: 6px 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 12px;">
+      </div>
+
+      <div class="select-group">
+        <label for="ai-model">Model:</label>
+        <select id="ai-model">
+          <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+          <option value="gpt-4">GPT-4</option>
+          <option value="gpt-4-turbo">GPT-4 Turbo</option>
+          <option value="claude-3-sonnet">Claude 3 Sonnet</option>
+          <option value="claude-3-opus">Claude 3 Opus</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Automation Settings</h3>
+      
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" id="auto-adapt"> 
+          Auto-adapt to page changes
+        </label>
+      </div>
+
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" id="record-mouse-position"> 
+          Record precise mouse positions
+        </label>
+      </div>
+
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" id="smart-waiting"> 
+          Smart waiting for elements
+        </label>
+      </div>
+
+      <div class="select-group">
+        <label for="action-delay">Action Delay (ms):</label>
+        <select id="action-delay">
+          <option value="0">No delay</option>
+          <option value="500">500ms</option>
+          <option value="1000" selected>1000ms</option>
+          <option value="2000">2000ms</option>
+          <option value="5000">5000ms</option>
+        </select>
+      </div>
+    </div>
+
     <div class="section">
       <h3>Scan Options</h3>
       
