@@ -294,6 +294,117 @@ Format as JSON:
     }
   }
 
+  // Generate recovery plan for failed automation steps
+  async generateRecoveryPlan(failedStep, errorMessage, previousResults) {
+    if (!this.isReady()) {
+      throw new Error('AI service not initialized or API key missing');
+    }
+
+    const prompt = this.buildRecoveryPrompt(failedStep, errorMessage, previousResults);
+    
+    try {
+      const response = await this.callAI(prompt);
+      return this.parseRecoveryResponse(response);
+    } catch (error) {
+      console.error('Failed to generate recovery plan:', error);
+      throw error;
+    }
+  }
+
+  // Adapt failed step with alternative approach
+  async adaptFailedStep(failedStep, errorMessage) {
+    if (!this.isReady()) {
+      throw new Error('AI service not initialized or API key missing');
+    }
+
+    const prompt = `Adapt this failed automation step to work around the error:
+
+FAILED STEP:
+${JSON.stringify(failedStep, null, 2)}
+
+ERROR MESSAGE:
+${errorMessage}
+
+Please provide an alternative approach as JSON:
+{
+  "adaptedStep": {
+    "action": "...",
+    "selector": "...",
+    "value": "...",
+    "options": {...}
+  },
+  "reasoning": "Why this approach should work better",
+  "confidence": 0.8
+}`;
+
+    try {
+      const response = await this.callAI(prompt);
+      const parsed = JSON.parse(response);
+      return parsed.adaptedStep;
+    } catch (error) {
+      console.error('Failed to adapt failed step:', error);
+      return null;
+    }
+  }
+
+  // Build recovery prompt
+  buildRecoveryPrompt(failedStep, errorMessage, previousResults) {
+    const successfulSteps = previousResults.filter(r => r.success).length;
+    const totalSteps = previousResults.length;
+
+    return `Help recover from automation failure:
+
+FAILED STEP:
+${JSON.stringify(failedStep, null, 2)}
+
+ERROR MESSAGE:
+${errorMessage}
+
+EXECUTION CONTEXT:
+- Steps completed successfully: ${successfulSteps}/${totalSteps}
+- Previous results: ${JSON.stringify(previousResults.slice(-3), null, 2)}
+
+Please provide a recovery plan as JSON:
+{
+  "recoverySteps": [
+    {
+      "action": "...",
+      "selector": "...",
+      "value": "...",
+      "options": {...},
+      "reasoning": "Why this step helps recovery"
+    }
+  ],
+  "fallbackOptions": [
+    {
+      "description": "Alternative approach if recovery fails",
+      "steps": [...]
+    }
+  ],
+  "confidence": 0.7
+}`;
+  }
+
+  // Parse recovery response
+  parseRecoveryResponse(response) {
+    try {
+      const parsed = JSON.parse(response);
+      
+      if (!parsed.recoverySteps || !Array.isArray(parsed.recoverySteps)) {
+        throw new Error('Invalid recovery response structure');
+      }
+      
+      return parsed;
+    } catch (error) {
+      console.error('Failed to parse recovery response:', error);
+      return {
+        recoverySteps: [],
+        fallbackOptions: [],
+        confidence: 0.0
+      };
+    }
+  }
+
   // Test AI connection
   async testConnection() {
     if (!this.apiKey) {

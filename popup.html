@@ -345,6 +345,43 @@
     </div>
 
     <div class="section">
+      <h3>Browser Automation Control</h3>
+      <div id="browser-status" style="font-size: 12px; margin-bottom: 8px; color: #6c757d;">
+        Browser: Not active
+      </div>
+      <button id="launch-browser-btn" class="btn">🚀 Launch Automation Browser</button>
+      <button id="close-browser-btn" class="btn secondary" disabled>⏹️ Close Browser</button>
+      <div class="checkbox-group" style="margin-top: 8px;">
+        <label>
+          <input type="checkbox" id="headless-mode" checked> 
+          Headless mode (hidden browser)
+        </label>
+      </div>
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" id="use-user-profile" checked> 
+          Use Chrome profile (avoid detection)
+        </label>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Autonomous Automation</h3>
+      <div id="autonomous-status" style="font-size: 12px; margin-bottom: 8px; color: #6c757d;">
+        Ready for autonomous control
+      </div>
+      <input type="text" id="automation-goal" placeholder="Enter automation goal (e.g., 'Fill out contact form')" style="width: 100%; margin-bottom: 8px;">
+      <button id="start-autonomous-btn" class="btn">🤖 Start Autonomous Automation</button>
+      <button id="stop-autonomous-btn" class="btn secondary" disabled>⏸️ Stop Automation</button>
+      <div id="autonomous-progress" style="font-size: 12px; margin-top: 8px; display: none;">
+        <div>Progress: <span id="progress-text">Initializing...</span></div>
+        <div style="background: #f0f0f0; border-radius: 4px; overflow: hidden; margin-top: 4px;">
+          <div id="progress-bar" style="height: 6px; background: #007bff; width: 0%; transition: width 0.3s;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
       <h3>AI Automation Assistant</h3>
       <div class="checkbox-group">
         <label>
@@ -407,6 +444,53 @@
           <option value="claude-3-sonnet">Claude 3 Sonnet</option>
           <option value="claude-3-opus">Claude 3 Opus</option>
         </select>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Browser Automation Settings</h3>
+      
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" id="browser-headless" checked> 
+          Launch browser in headless mode
+        </label>
+      </div>
+
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" id="use-profile" checked> 
+          Use Chrome profile to avoid detection
+        </label>
+      </div>
+
+      <div class="select-group">
+        <label for="automation-timeout">Automation timeout (seconds):</label>
+        <select id="automation-timeout">
+          <option value="15">15 seconds</option>
+          <option value="30" selected>30 seconds</option>
+          <option value="60">1 minute</option>
+          <option value="120">2 minutes</option>
+          <option value="300">5 minutes</option>
+        </select>
+      </div>
+
+      <div class="select-group">
+        <label for="step-delay">Delay between automation steps (ms):</label>
+        <select id="step-delay">
+          <option value="0">No delay</option>
+          <option value="250">250ms</option>
+          <option value="500" selected>500ms</option>
+          <option value="1000">1 second</option>
+          <option value="2000">2 seconds</option>
+        </select>
+      </div>
+
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" id="ai-recovery" checked> 
+          Enable AI-powered error recovery
+        </label>
       </div>
     </div>
 
@@ -506,6 +590,8 @@
     </div>
   </div>
 
+  <script src="ai-service.js"></script>
+  <script src="browser-controller.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

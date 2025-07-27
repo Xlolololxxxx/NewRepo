@@ -17,6 +17,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load page info
   await loadPageInfo();
   
+  // Initialize browser controller
+  await initializeBrowserController();
+  
   // Setup event listeners
   setupEventListeners();
   
@@ -49,6 +52,12 @@ function setupEventListeners() {
   document.getElementById('load-sessions-btn').addEventListener('click', loadRecordedSessions);
   document.getElementById('export-instructions-btn').addEventListener('click', exportInstructions);
   
+  // Browser automation event listeners
+  document.getElementById('launch-browser-btn').addEventListener('click', launchAutomationBrowser);
+  document.getElementById('close-browser-btn').addEventListener('click', closeAutomationBrowser);
+  document.getElementById('start-autonomous-btn').addEventListener('click', startAutonomousAutomation);
+  document.getElementById('stop-autonomous-btn').addEventListener('click', stopAutonomousAutomation);
+  
   // Settings buttons
   document.getElementById('save-settings-btn').addEventListener('click', saveSettings);
   document.getElementById('reset-settings-btn').addEventListener('click', resetSettings);
@@ -70,6 +79,23 @@ function setupEventListeners() {
   document.getElementById('record-mouse-position').addEventListener('change', onSettingChange);
   document.getElementById('smart-waiting').addEventListener('change', onSettingChange);
   document.getElementById('action-delay').addEventListener('change', onSettingChange);
+  
+  // Browser automation settings event listeners (check if elements exist)
+  if (document.getElementById('browser-headless')) {
+    document.getElementById('browser-headless').addEventListener('change', onSettingChange);
+  }
+  if (document.getElementById('use-profile')) {
+    document.getElementById('use-profile').addEventListener('change', onSettingChange);
+  }
+  if (document.getElementById('automation-timeout')) {
+    document.getElementById('automation-timeout').addEventListener('change', onSettingChange);
+  }
+  if (document.getElementById('step-delay')) {
+    document.getElementById('step-delay').addEventListener('change', onSettingChange);
+  }
+  if (document.getElementById('ai-recovery')) {
+    document.getElementById('ai-recovery').addEventListener('change', onSettingChange);
+  }
   
   // Selector checkboxes
   ['buttons', 'inputs', 'links', 'clickable', 'forms'].forEach(type => {
@@ -125,6 +151,31 @@ async function loadSettings() {
     document.getElementById('sel-links').checked = selectors.some(s => s.includes('a'));
     document.getElementById('sel-clickable').checked = selectors.some(s => s.includes('[role="button"]'));
     document.getElementById('sel-forms').checked = selectors.some(s => s.includes('form'));
+    
+    // Browser automation settings
+    if (document.getElementById('browser-headless')) {
+      document.getElementById('browser-headless').checked = settings.browserHeadless !== false;
+    }
+    if (document.getElementById('use-profile')) {
+      document.getElementById('use-profile').checked = settings.useUserProfile !== false;
+    }
+    if (document.getElementById('automation-timeout')) {
+      document.getElementById('automation-timeout').value = settings.automationTimeout || 30;
+    }
+    if (document.getElementById('step-delay')) {
+      document.getElementById('step-delay').value = settings.stepDelay || 500;
+    }
+    if (document.getElementById('ai-recovery')) {
+      document.getElementById('ai-recovery').checked = settings.aiRecovery !== false;
+    }
+    
+    // Update UI elements in automation tab
+    if (document.getElementById('headless-mode')) {
+      document.getElementById('headless-mode').checked = settings.browserHeadless !== false;
+    }
+    if (document.getElementById('use-user-profile')) {
+      document.getElementById('use-user-profile').checked = settings.useUserProfile !== false;
+    }
     
   } catch (error) {
     console.error('Failed to load settings:', error);
@@ -406,6 +457,23 @@ async function saveSettings() {
       selectedSelectors: getSelectedSelectors()
     };
     
+    // Add browser automation settings if they exist
+    if (document.getElementById('browser-headless')) {
+      settings.browserHeadless = document.getElementById('browser-headless').checked;
+    }
+    if (document.getElementById('use-profile')) {
+      settings.useUserProfile = document.getElementById('use-profile').checked;
+    }
+    if (document.getElementById('automation-timeout')) {
+      settings.automationTimeout = parseInt(document.getElementById('automation-timeout').value);
+    }
+    if (document.getElementById('step-delay')) {
+      settings.stepDelay = parseInt(document.getElementById('step-delay').value);
+    }
+    if (document.getElementById('ai-recovery')) {
+      settings.aiRecovery = document.getElementById('ai-recovery').checked;
+    }
+    
     await chrome.storage.sync.set(settings);
     showStatus('Settings saved successfully', 'success');
     
@@ -475,6 +543,8 @@ window.highlightSingleElement = highlightSingleElement;
 // Global variables for automation features
 let currentInstructions = [];
 let recordingState = { isRecording: false };
+let browserController = null;
+let autonomousMode = { isActive: false, sessionId: null };
 
 // Action recording functions
 async function startRecording() {
@@ -893,6 +963,263 @@ function onAIProviderChange() {
   }
   
   onAISettingChange();
+}
+
+// Browser Automation Functions
+async function launchAutomationBrowser() {
+  const launchBtn = document.getElementById('launch-browser-btn');
+  const closeBtn = document.getElementById('close-browser-btn');
+  const statusEl = document.getElementById('browser-status');
+  
+  try {
+    launchBtn.disabled = true;
+    launchBtn.textContent = '🚀 Launching...';
+    statusEl.textContent = 'Browser: Launching...';
+    
+    // Initialize browser controller if not exists
+    if (!browserController) {
+      browserController = new BrowserController();
+      await browserController.initialize();
+    }
+    
+    // Get browser settings
+    const headless = document.getElementById('headless-mode').checked;
+    const useProfile = document.getElementById('use-user-profile').checked;
+    
+    // Launch browser
+    const launched = await browserController.launchBrowser();
+    
+    if (launched) {
+      launchBtn.disabled = true;
+      closeBtn.disabled = false;
+      statusEl.textContent = `Browser: Active (${headless ? 'Headless' : 'Visible'})`;
+      statusEl.style.color = '#28a745';
+      showStatus('Automation browser launched successfully', 'success');
+    } else {
+      throw new Error('Failed to launch browser');
+    }
+    
+  } catch (error) {
+    console.error('Failed to launch browser:', error);
+    showStatus(`Failed to launch browser: ${error.message}`, 'error');
+    statusEl.textContent = 'Browser: Launch failed';
+    statusEl.style.color = '#dc3545';
+  } finally {
+    launchBtn.disabled = false;
+    launchBtn.textContent = '🚀 Launch Automation Browser';
+  }
+}
+
+async function closeAutomationBrowser() {
+  const launchBtn = document.getElementById('launch-browser-btn');
+  const closeBtn = document.getElementById('close-browser-btn');
+  const statusEl = document.getElementById('browser-status');
+  
+  try {
+    closeBtn.disabled = true;
+    closeBtn.textContent = '⏹️ Closing...';
+    statusEl.textContent = 'Browser: Closing...';
+    
+    if (browserController) {
+      const closed = await browserController.closeBrowser();
+      
+      if (closed) {
+        launchBtn.disabled = false;
+        closeBtn.disabled = true;
+        statusEl.textContent = 'Browser: Not active';
+        statusEl.style.color = '#6c757d';
+        showStatus('Automation browser closed', 'success');
+      } else {
+        throw new Error('Failed to close browser');
+      }
+    }
+    
+  } catch (error) {
+    console.error('Failed to close browser:', error);
+    showStatus(`Failed to close browser: ${error.message}`, 'error');
+  } finally {
+    closeBtn.disabled = false;
+    closeBtn.textContent = '⏹️ Close Browser';
+  }
+}
+
+async function startAutonomousAutomation() {
+  const startBtn = document.getElementById('start-autonomous-btn');
+  const stopBtn = document.getElementById('stop-autonomous-btn');
+  const statusEl = document.getElementById('autonomous-status');
+  const progressEl = document.getElementById('autonomous-progress');
+  const goalInput = document.getElementById('automation-goal');
+  
+  try {
+    const goal = goalInput.value.trim();
+    if (!goal) {
+      showStatus('Please enter an automation goal', 'error');
+      goalInput.focus();
+      return;
+    }
+    
+    if (!scanResults) {
+      showStatus('Please scan the page first before starting autonomous automation', 'error');
+      return;
+    }
+    
+    startBtn.disabled = true;
+    stopBtn.disabled = false;
+    startBtn.textContent = '🤖 Starting...';
+    statusEl.textContent = 'Initializing autonomous automation...';
+    progressEl.style.display = 'block';
+    
+    // Initialize browser controller if not exists
+    if (!browserController) {
+      browserController = new BrowserController();
+      await browserController.initialize();
+    }
+    
+    // Update progress
+    updateAutonomousProgress('Analyzing page structure...', 10);
+    
+    // Start autonomous mode
+    autonomousMode.isActive = true;
+    autonomousMode.sessionId = `autonomous_${Date.now()}`;
+    
+    const results = await browserController.startAutonomousMode(goal, scanResults);
+    
+    if (results.success) {
+      updateAutonomousProgress('Automation completed successfully', 100);
+      statusEl.textContent = 'Autonomous automation completed';
+      statusEl.style.color = '#28a745';
+      showStatus(`Automation completed: ${results.results.length} steps executed`, 'success');
+      
+      // Display results
+      displayAutomationResults(results);
+    } else {
+      throw new Error('Automation failed to complete');
+    }
+    
+  } catch (error) {
+    console.error('Autonomous automation failed:', error);
+    showStatus(`Autonomous automation failed: ${error.message}`, 'error');
+    statusEl.textContent = 'Automation failed';
+    statusEl.style.color = '#dc3545';
+    updateAutonomousProgress('Automation failed', 0);
+  } finally {
+    autonomousMode.isActive = false;
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+    startBtn.textContent = '🤖 Start Autonomous Automation';
+    
+    // Hide progress after delay
+    setTimeout(() => {
+      progressEl.style.display = 'none';
+    }, 5000);
+  }
+}
+
+async function stopAutonomousAutomation() {
+  const startBtn = document.getElementById('start-autonomous-btn');
+  const stopBtn = document.getElementById('stop-autonomous-btn');
+  const statusEl = document.getElementById('autonomous-status');
+  
+  try {
+    stopBtn.disabled = true;
+    stopBtn.textContent = '⏸️ Stopping...';
+    statusEl.textContent = 'Stopping autonomous automation...';
+    
+    autonomousMode.isActive = false;
+    
+    if (browserController) {
+      await browserController.closeBrowser();
+    }
+    
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+    statusEl.textContent = 'Automation stopped';
+    statusEl.style.color = '#6c757d';
+    showStatus('Autonomous automation stopped', 'info');
+    
+  } catch (error) {
+    console.error('Failed to stop automation:', error);
+    showStatus('Failed to stop automation cleanly', 'error');
+  } finally {
+    stopBtn.textContent = '⏸️ Stop Automation';
+  }
+}
+
+function updateAutonomousProgress(text, percent) {
+  const progressText = document.getElementById('progress-text');
+  const progressBar = document.getElementById('progress-bar');
+  
+  if (progressText) progressText.textContent = text;
+  if (progressBar) progressBar.style.width = `${percent}%`;
+}
+
+function displayAutomationResults(results) {
+  // This could display detailed results in the instructions section
+  // For now, we'll show a summary
+  const instructionsList = document.getElementById('instructions-list');
+  
+  if (results.results && results.results.length > 0) {
+    let html = '<div class="automation-results">';
+    html += `<h4>Autonomous Automation Results</h4>`;
+    html += `<p><strong>Goal:</strong> ${results.goal}</p>`;
+    html += `<p><strong>Steps Executed:</strong> ${results.results.length}</p>`;
+    
+    const successCount = results.results.filter(r => r.success).length;
+    html += `<p><strong>Success Rate:</strong> ${successCount}/${results.results.length} (${Math.round(successCount/results.results.length*100)}%)</p>`;
+    
+    html += '<div class="step-results">';
+    results.results.forEach((result, index) => {
+      const status = result.success ? '✅' : '❌';
+      const action = result.instruction.action || 'unknown';
+      html += `<div class="step-result">${status} Step ${result.step}: ${action}</div>`;
+    });
+    html += '</div></div>';
+    
+    instructionsList.innerHTML = html;
+    instructionsList.className = 'results';
+  }
+}
+
+// Update browser status periodically
+async function updateBrowserStatus() {
+  if (browserController) {
+    try {
+      const status = await browserController.getBrowserStatus();
+      const statusEl = document.getElementById('browser-status');
+      
+      if (status.isActive) {
+        statusEl.textContent = `Browser: Active (${status.config.headless ? 'Headless' : 'Visible'})`;
+        statusEl.style.color = '#28a745';
+        document.getElementById('launch-browser-btn').disabled = true;
+        document.getElementById('close-browser-btn').disabled = false;
+      } else {
+        statusEl.textContent = 'Browser: Not active';
+        statusEl.style.color = '#6c757d';
+        document.getElementById('launch-browser-btn').disabled = false;
+        document.getElementById('close-browser-btn').disabled = true;
+      }
+    } catch (error) {
+      // Ignore errors during status updates
+    }
+  }
+}
+
+// Initialize browser controller when popup loads
+async function initializeBrowserController() {
+  try {
+    if (typeof BrowserController !== 'undefined') {
+      browserController = new BrowserController();
+      await browserController.initialize();
+      
+      // Update browser status
+      await updateBrowserStatus();
+      
+      // Set up periodic status updates
+      setInterval(updateBrowserStatus, 5000);
+    }
+  } catch (error) {
+    console.error('Failed to initialize browser controller:', error);
+  }
 }
 
 // Load AI settings when popup loads

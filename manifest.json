@@ -48,7 +48,7 @@
   
   "web_accessible_resources": [
     {
-      "resources": ["dom-scanner.js", "ai-service.js"],
+      "resources": ["dom-scanner.js", "ai-service.js", "browser-controller.js"],
       "matches": ["<all_urls>"]
     }
   ]
