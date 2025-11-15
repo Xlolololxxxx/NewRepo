@@ -1,4 +1,4 @@
-app/src/main/java/com/devbrowser/app/CustomWebViewClient.java
 app/src/main/java/com/devbrowser/app/CustomWebChromeClient.java
 app/src/main/java/com/devbrowser/app/MainActivity.java
+app/src/main/java/com/devbrowser/app/CustomWebViewClient.java
 build/gen/com/devbrowser/app/R.java
