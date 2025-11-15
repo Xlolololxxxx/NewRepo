@@ -40,14 +40,20 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
-        initializeViews();
-        setupWebView();
-        setupListeners();
+        try {
+            setContentView(R.layout.activity_main);
+            initializeViews();
+            setupWebView();
+            setupListeners();
 
-        // Load default page
-        loadUrl("https://www.google.com");
+            // Load default page
+            loadUrl("https://www.google.com");
+        } catch (Exception e) {
+            e.printStackTrace();
+            // If anything fails, at least show an error
+            android.util.Log.e("DevBrowser", "Failed to initialize: " + e.getMessage(), e);
+        }
     }
 
     private void initializeViews() {
