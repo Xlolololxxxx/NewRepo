@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DevBrowser</string>
+    <string name="url_hint">Enter URL</string>
+    <string name="go">Go</string>
+    <string name="refresh">Refresh</string>
+    <string name="forward">Forward</string>
+    <string name="back">Back</string>
+    <string name="console">Console</string>
+    <string name="headers">Headers</string>
+    <string name="settings">Settings</string>
+    <string name="clear_console">Clear</string>
+    <string name="execute">Execute</string>
+    <string name="header_name">Header Name</string>
+    <string name="header_value">Header Value</string>
+    <string name="add_header">Add Header</string>
+    <string name="cors_bypass">CORS Bypass</string>
+    <string name="close">Close</string>
+</resources>

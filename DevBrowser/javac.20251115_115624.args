@@ -1,0 +1,13 @@
+-source
+1.8
+-target
+1.8
+-d
+build/obj
+-classpath
+/usr/lib/android-sdk/platforms/android-23/android.jar
+-sourcepath
+app/src/main/java:build/gen
+-bootclasspath
+/usr/lib/android-sdk/platforms/android-23/android.jar
+@build/sources.txt

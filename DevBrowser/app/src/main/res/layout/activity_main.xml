@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/darker_bg">
+
+        <!-- Toolbar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="8dp"
+            android:background="@color/dark_bg"
+            android:elevation="4dp">
+
+            <ImageButton
+                android:id="@+id/btn_back"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@android:color/transparent"
+                android:contentDescription="@string/back"
+                android:src="@android:drawable/ic_media_previous"
+                android:tint="@color/white" />
+
+            <ImageButton
+                android:id="@+id/btn_forward"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@android:color/transparent"
+                android:contentDescription="@string/forward"
+                android:src="@android:drawable/ic_media_next"
+                android:tint="@color/white" />
+
+            <ImageButton
+                android:id="@+id/btn_refresh"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@android:color/transparent"
+                android:contentDescription="@string/refresh"
+                android:src="@android:drawable/ic_popup_sync"
+                android:tint="@color/white" />
+
+            <EditText
+                android:id="@+id/url_input"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                android:background="@color/console_bg"
+                android:hint="@string/url_hint"
+                android:textColorHint="#888888"
+                android:textColor="@color/white"
+                android:inputType="textUri"
+                android:imeOptions="actionGo"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:textSize="14sp" />
+
+            <Button
+                android:id="@+id/btn_go"
+                android:layout_width="60dp"
+                android:layout_height="40dp"
+                android:text="@string/go"
+                android:textSize="12sp"
+                android:backgroundTint="@color/accent" />
+
+            <ImageButton
+                android:id="@+id/btn_console"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="8dp"
+                android:background="@android:color/transparent"
+                android:contentDescription="@string/console"
+                android:src="@android:drawable/ic_dialog_info"
+                android:tint="@color/teal_200" />
+
+            <ImageButton
+                android:id="@+id/btn_headers"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@android:color/transparent"
+                android:contentDescription="@string/headers"
+                android:src="@android:drawable/ic_menu_edit"
+                android:tint="@color/teal_200" />
+        </LinearLayout>
+
+        <!-- Progress Bar -->
+        <ProgressBar
+            android:id="@+id/progress_bar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="3dp"
+            android:progressTint="@color/accent"
+            android:visibility="gone" />
+
+        <!-- WebView Container -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <WebView
+                android:id="@+id/webview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </FrameLayout>
+
+        <!-- Console Panel (Initially Hidden) -->
+        <LinearLayout
+            android:id="@+id/console_panel"
+            android:layout_width="match_parent"
+            android:layout_height="250dp"
+            android:orientation="vertical"
+            android:background="@color/console_bg"
+            android:padding="8dp"
+            android:visibility="gone"
+            android:elevation="8dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Developer Console"
+                    android:textColor="@color/white"
+                    android:textStyle="bold"
+                    android:textSize="14sp" />
+
+                <Button
+                    android:id="@+id/btn_clear_console"
+                    style="@style/ConsoleButton"
+                    android:text="@string/clear_console" />
+
+                <Button
+                    android:id="@+id/btn_close_console"
+                    style="@style/ConsoleButton"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/close"
+                    android:backgroundTint="@color/error" />
+            </LinearLayout>
+
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:layout_marginTop="8dp"
+                android:background="@color/darker_bg"
+                android:padding="8dp">
+
+                <TextView
+                    android:id="@+id/console_output"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/console_text"
+                    android:fontFamily="monospace"
+                    android:textSize="11sp"
+                    android:text="Console ready...\n" />
+            </ScrollView>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+
+                <EditText
+                    android:id="@+id/console_input"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@color/darker_bg"
+                    android:hint="Execute JavaScript..."
+                    android:textColorHint="#888888"
+                    android:textColor="@color/white"
+                    android:fontFamily="monospace"
+                    android:inputType="text"
+                    android:padding="8dp"
+                    android:textSize="12sp" />
+
+                <Button
+                    android:id="@+id/btn_execute"
+                    style="@style/ConsoleButton"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/execute" />
+            </LinearLayout>
+        </LinearLayout>
+
+    <!-- Headers Dialog (Bottom Sheet) -->
+    <LinearLayout
+        android:id="@+id/headers_panel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@color/dark_bg"
+        android:padding="16dp"
+        android:visibility="gone"
+        android:elevation="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Custom Headers"
+            android:textColor="@color/white"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_marginBottom="16dp" />
+
+        <EditText
+            android:id="@+id/header_name_input"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/console_bg"
+            android:hint="@string/header_name"
+            android:textColorHint="#888888"
+            android:textColor="@color/white"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp" />
+
+        <EditText
+            android:id="@+id/header_value_input"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/console_bg"
+            android:hint="@string/header_value"
+            android:textColorHint="#888888"
+            android:textColor="@color/white"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btn_add_header"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/add_header"
+                android:backgroundTint="@color/success" />
+
+            <View
+                android:layout_width="8dp"
+                android:layout_height="1dp" />
+
+            <Button
+                android:id="@+id/btn_close_headers"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/close"
+                android:backgroundTint="@color/error" />
+        </LinearLayout>
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="150dp"
+            android:layout_marginTop="16dp"
+            android:background="@color/console_bg"
+            android:padding="8dp">
+
+            <TextView
+                android:id="@+id/headers_list"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/console_text"
+                android:fontFamily="monospace"
+                android:textSize="11sp"
+                android:text="No custom headers set.\n" />
+        </ScrollView>
+
+        <CheckBox
+            android:id="@+id/cors_bypass_checkbox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/cors_bypass"
+            android:textColor="@color/white"
+            android:checked="true" />
+    </LinearLayout>
+
+</LinearLayout>
