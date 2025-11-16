@@ -41,11 +41,15 @@ aapt package -f \
     -M "$SRC_DIR/AndroidManifest.xml" \
     -S "$SRC_DIR/res" \
     -I "$PLATFORM/android.jar" \
-    -F "$BUILD_DIR/DevBrowser-unaligned.apk" \
-    "$BUILD_DIR/apk"
+    -F "$BUILD_DIR/DevBrowser-unaligned.apk"
+
+echo "==> Adding DEX to APK (uncompressed)..."
+cd "$BUILD_DIR/apk"
+zip -0 "../DevBrowser-unaligned.apk" classes.dex
+cd ../..
 
 echo "==> Aligning APK..."
-zipalign -f -p 4 \
+zipalign -f 4 \
     "$BUILD_DIR/DevBrowser-unaligned.apk" \
     "$BUILD_DIR/DevBrowser-aligned.apk"
 
